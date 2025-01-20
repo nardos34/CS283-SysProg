@@ -20,8 +20,7 @@ int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
 	
 	// Initializes user string counter
-	int strLength = 0;
-	//bool space = false;
+	int str_length = 0;
 
 	// Sets the internal buffer with 50 dots
 	memset(buff, '.', len);
@@ -31,11 +30,15 @@ int setup_buff(char *buff, char *user_str, int len){
 		while (*user_str == ' ') {
 			user_str++;
 		}
-		//user_str--;
 	}
 
 	// This copies every character from the user supplied string to the internal buffer skipping duplicate consequitve whitespace.
     while (*user_str != '\0') {
+    	//If the user supplied a string that is too large it will return with an error code, otherwise it will return the length of the users string.
+    	if (str_length >= len) {
+			return -1;
+    	}
+
 		*buff = *user_str;	
 		buff++;
 
@@ -48,18 +51,15 @@ int setup_buff(char *buff, char *user_str, int len){
 			user_str++;
 		}
 
-		strLength += 1;
+		str_length += 1;
     }
     
-	// If the user supplied a string that is too large it will return with an error code, otherwise it will return the length of the users string.
-    if (strLength > len) {
-		return -1;
-    } else {
-		return strLength;
-    }
+	// Returns the length of the given string
+	return str_length;
 
 }
 
+// Prints out the internal buffer
 void print_buff(char *buff, int len){
     printf("Buffer:  ");
     for (int i=0; i<len; i++){
@@ -68,35 +68,41 @@ void print_buff(char *buff, int len){
     putchar('\n');
 }
 
+// Used for printing out the usage string for the -h or any errors
 void usage(char *exename){
     printf("usage: %s [-h|c|r|w|x] \"string\" [other args]\n", exename);
 
 }
 
+// Counts the number of words in the buffer
 int count_words(char *buff, int len, int str_len){
 	// Initializes the number of words in ther user string, starting with the first word.
-	int countWord = 1;
-	char *nextChar = buff;
-	nextChar++;
+	int count_word = 1;
+	char *next_char = buff;
+	next_char++;
 	
+
+	if (str_len > len) {
+		return -1;
+	}
+	
+	// If the string length is 0 that means the given string has no words
 	if (str_len == 0) {
-		countWord = 0;
+		count_word = 0;
 	} else {
+		// Goes through the string to count the number of words in the buffer
     	for (int i = 0; i < str_len + 1; i++) {
-			if ((*buff == ' ') && (*nextChar != '.')) {
-				countWord += 1;
+			if ((*buff == ' ') && (*next_char != '.')) {
+				count_word += 1;
 			}
 			buff++;
-			nextChar++;
+			next_char++;
     	}
 
     }
 	
-	if (countWord > len) {
-		return -1;
-	} else {
-		return countWord;
-	}
+	// Checks for errors when getting the number of words
+	return count_word;
 	
 }
 
@@ -133,12 +139,13 @@ void word_print(char *buff, int str_len) {
 
 }
 
+// Reverses the string
 void reverse(char *buff, int str_len) {
 	// Initializing a copy of the buffer by creating space
 	char *copy_buff = malloc(str_len);
 
 	// Copying over the buffer without the remainder of the internal buffer
-	// This is so that I am copying only the string
+	// This is so that I am copying only the string without the .........
 	memcpy(copy_buff, buff, str_len);
 
 	// This sets the pointer to the end of the copied string
@@ -158,8 +165,6 @@ void reverse(char *buff, int str_len) {
 	copy_buff++;
 	free(copy_buff);
 
-	// Prints the buffer out
-    printf("%s\n", buff);
 }
 
 int main(int argc, char *argv[]){
@@ -172,7 +177,7 @@ int main(int argc, char *argv[]){
 
     //TODO:  #1. WHY IS THIS SAFE, aka what if arv[1] does not exist?
     //      PLACE A COMMENT BLOCK HERE EXPLAINING
-    // Answer #1: This is safe because if the program is missing arguments, it will print out a usage string to let the user know how to properly use the program.
+    // Answer #1: This is safe because if the program is missing arguments, it will print out a usage string to let the user know how to properly use the program. This makes sure that the program is called with the proper arguments, and exits safely otherwise.
     if ((argc < 2) || (*argv[1] != '-')){
         usage(argv[0]);
         exit(1);
@@ -216,7 +221,7 @@ int main(int argc, char *argv[]){
         case 'c':
             rc = count_words(buff, BUFFER_SZ, user_str_len);  //you need to implement
             if (rc < 0){
-                printf("Error counting words, rc = %d", rc);
+                printf("Error counting words, rc = %d\n", rc);
                 exit(2);
             }
             printf("Word Count: %d\n", rc);
@@ -248,5 +253,13 @@ int main(int argc, char *argv[]){
 //          the buff variable will have exactly 50 bytes?
 //  
 //          PLACE YOUR ANSWER HERE
-//			
+//			Answer #7:
+//			It is important to have both the buffer and the length 
+//			as the parameters for the functions because it makes it 
+//			easier to debug issues related to memory allocation and 
+//			the prevention of the buffer overflowing. Since, each 
+//			function either changes or analyzes the buffer, it is 
+//			important to have the buffer as one of the parameters to 
+//			be able to print out the number of words, reverse the 
+//			string, or print the individual words.
 
