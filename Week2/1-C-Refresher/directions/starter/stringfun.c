@@ -81,7 +81,7 @@ int count_words(char *buff, int len, int str_len){
 	char *next_char = buff;
 	next_char++;
 	
-
+	// If the provided string length is longer than 50 bytes it will return -1 indicating and error in memory allocation overflow
 	if (str_len > len) {
 		return -1;
 	}
