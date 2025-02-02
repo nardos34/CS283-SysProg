@@ -59,7 +59,21 @@ int open_db(char *dbFile, bool should_truncate){
  *  console:  Does not produce any console I/O used by other functions
  */
 int get_student(int fd, int id, student_t *s){
-    return NOT_IMPLEMENTED_YET;
+
+    off_t myoffset = id * STUDENT_RECORD_SIZE;
+
+    int seek = lseek(fd, myoffset, SEEK_SET);
+
+    if (seek < 0) {
+        return ERR_DB_FILE;
+    }
+
+    ssize_t read_line = read(fd, s, STUDENT_RECORD_SIZE);
+    if (memcmp(s, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) == 0) {
+        return SRCH_NOT_FOUND;
+    }
+    
+    return NO_ERROR;
 }
 
 /*
@@ -87,9 +101,90 @@ int get_student(int fd, int id, student_t *s){
  *            M_ERR_DB_WRITE    error writing to db file (adding student)
  *            
  */
-int add_student(int fd, int id, char *fname, char *lname, int gpa){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+
+int add_student(int fd, int id, char *fname, char *lname, int gpa)
+{
+    //printf("todo: add student id %d name %s %s with gpa %d\n", id, fname, lname, gpa);
+
+    student_t mystudent = {0};
+    off_t myoffset;
+
+    // todo check if the student exists already
+    // ? if yes, print dup error msg and return db op error
+    // ? if no, no error continue on with adding student
+
+    myoffset = id * STUDENT_RECORD_SIZE;
+
+    int seek = lseek(fd, myoffset, SEEK_SET);
+
+    ssize_t read_line = read(fd, &mystudent, STUDENT_RECORD_SIZE);
+    if ((memcmp(&mystudent, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) || seek == -1) {
+        printf(M_ERR_DB_ADD_DUP, id);
+        return ERR_DB_OP;
+    }
+
+    /*
+    ssize_t read_line = read(fd, &mystudent, STUDENT_RECORD_SIZE);
+    if (read_line != 0) {
+        printf(M_ERR_DB_ADD_DUP, id);
+        return ERR_DB_OP;
+    }
+    */
+    
+
+    /*
+    int seek = lseek(fd, myoffset - 64, SEEK_SET);
+    if (seek < 0) {
+        ssize_t read_line = read(fd, &mystudent, STUDENT_RECORD_SIZE);
+        printf("%s\n", mystudent.fname);
+        printf(M_ERR_DB_ADD_DUP, id);
+        return ERR_DB_OP;
+    }
+    */
+
+
+
+    /*
+    myoffset = id * STUDENT_RECORD_SIZE;
+    lseek(fd, myoffset, SEEK_SET);
+    read(fd, &mystudent, STUDENT_RECORD_SIZE);
+    if (memcmp(&mystudent, "\0", STUDENT_RECORD_SIZE) == 0) {
+        printf(M_ERR_DB_ADD_DUP, id);
+        return ERR_DB_OP;
+    }
+    */
+
+
+    //printf("need to add student id %d at offset %ld\n", id, myoffset);
+
+    // todo - populate the student struct for writing to db
+    mystudent.id = id;
+    mystudent.gpa = gpa;
+    //                dest   source  how-many-to-take
+    strncpy(mystudent.fname, fname, sizeof(mystudent.fname));
+    strncpy(mystudent.lname, lname, sizeof(mystudent.lname));
+
+    off_t lseek_result = lseek(fd, myoffset, SEEK_SET);
+    if (lseek_result < 0)
+    {
+        // todo print the db read error message
+        printf("%s\n", M_ERR_DB_READ);
+        // todo return the db file error code
+        return ERR_DB_FILE;
+    }
+
+    ssize_t bytes_written = write(fd, &mystudent, STUDENT_RECORD_SIZE);
+    if (bytes_written < 0) // TODO - what is the other condition you should check about bytes_written
+    {
+        // todo print the db write error message
+        printf("%s\n", M_ERR_DB_WRITE);
+        // todo return the db file error code
+        return ERR_DB_FILE;
+    }
+
+    // if we get here, the student was added
+    printf(M_STD_ADDED, id);
+    return NO_ERROR;
 }
 
 /*
@@ -215,7 +310,15 @@ int print_db(int fd){
  *            
  */
 void print_student(student_t *s){
-    printf(M_NOT_IMPL);
+    if (s->id < MIN_STD_ID || s->id > MAX_STD_ID) {
+        printf(M_ERR_STD_PRINT);
+    } else if (s->gpa < MIN_STD_GPA || s->gpa > MAX_STD_GPA) {
+        printf(M_ERR_STD_PRINT);
+    } else {
+        float calculated_gpa_from_s = s->gpa / 100.0;
+        printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
+        printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname, s->lname, calculated_gpa_from_s);
+    }
 }
 
 /*
