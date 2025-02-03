@@ -130,11 +130,8 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa) {
     }
 
     ssize_t bytes_written = write(fd, &mystudent, STUDENT_RECORD_SIZE);
-    if (bytes_written < 0) // TODO - what is the other condition you should check about bytes_written
-    {
-        // todo print the db write error message
+    if (bytes_written < 0 || bytes_written != STUDENT_RECORD_SIZE) {
         printf("%s\n", M_ERR_DB_WRITE);
-        // todo return the db file error code
         return ERR_DB_FILE;
     }
 
@@ -166,7 +163,6 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa) {
  */
 int del_student(int fd, int id){
     student_t student = {0};
-
     int locate_student = get_student(fd, id, &student);
     off_t myoffset = id * STUDENT_RECORD_SIZE;
 
@@ -222,6 +218,11 @@ int count_db_records(int fd){
     while (read_line = read(fd, &mystudent, STUDENT_RECORD_SIZE) != 0) {
         if ((memcmp(&mystudent, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0)) {
             count_records++;
+        }
+
+        if (read_line == -1) {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_OP;
         }
     }
 
@@ -328,14 +329,12 @@ int print_db(int fd){
  *            
  */
 void print_student(student_t *s){
-    if (s->id < MIN_STD_ID || s->id > MAX_STD_ID) {
-        printf(M_ERR_STD_PRINT);
-    } else if (s->gpa < MIN_STD_GPA || s->gpa > MAX_STD_GPA) {
-        printf(M_ERR_STD_PRINT);
-    } else {
+    if (validate_range(s->id, s->gpa) == NO_ERROR) {
         float calculated_gpa_from_s = s->gpa / 100.0;
         printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
         printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname, s->lname, calculated_gpa_from_s);
+    } else {
+        printf(M_ERR_STD_PRINT);
     }
 }
 
