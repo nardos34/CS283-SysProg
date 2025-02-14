@@ -118,8 +118,8 @@
         if (strlen(args) > EXE_MAX) {
             return ERR_CMD_OR_ARGS_TOO_BIG;
         }
-        strncpy(cmd.exe, args, EXE_MAX-1);
-        cmd.exe[EXE_MAX - 1] = '\0';
+        strncpy(cmd.exe, args, EXE_MAX);
+        cmd.exe[EXE_MAX] = '\0';
 
         char *arg = strtok_r(NULL, " ", &save_args);
         
