@@ -58,7 +58,6 @@ int main()
             break;
         }
         cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
-        //IMPLEMENT THE REST OF THE REQUIREMENTS
 
         if (strcmp(cmd_buff, EXIT_CMD) == 0) {
             exit(0);
