@@ -28,4 +28,4 @@ valgrind:
 	echo "pwd\nexit" | valgrind --tool=helgrind --error-exitcode=1 ./$(TARGET) 
 
 # Phony targets
-.PHONY: all clean test
+.PHONY: all clean testdsg
