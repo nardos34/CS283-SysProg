@@ -1,4 +1,4 @@
-# Compiler settings
+hel# Compiler settings
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 
