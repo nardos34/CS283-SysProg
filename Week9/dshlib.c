@@ -100,7 +100,7 @@ int execute_pipeline(command_list_t *clist) {
             }
 
             execvp(clist->commands[i].argv[0], clist->commands[i].argv);
-            exit(1);
+            exit(EXIT_FAILURE);
         }
     }
 
