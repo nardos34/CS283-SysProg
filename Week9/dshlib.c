@@ -52,7 +52,8 @@
  *  Standard Library Functions You Might Want To Consider Using (assignment 2+)
  *      fork(), execvp(), exit(), chdir()
  */
-int free_cmd_buff(cmd_buff_t *cmd_buff) {
+
+ int free_cmd_buff(cmd_buff_t *cmd_buff) {
     if (cmd_buff->_cmd_buffer) {
         free(cmd_buff->_cmd_buffer);
         cmd_buff->_cmd_buffer = NULL;
@@ -61,7 +62,62 @@ int free_cmd_buff(cmd_buff_t *cmd_buff) {
     return OK;
  }
 
- int exec_cmd(cmd_buff_t *cmd) {
+
+int execute_pipeline(command_list_t *clist) {
+    int num_commands = clist->num;
+    int num_pipes = num_commands - 1;
+    int pipes[num_pipes][2];
+    pid_t pids[num_commands];
+
+    if (clist->num > CMD_MAX) {
+        return ERR_TOO_MANY_COMMANDS;
+    }
+
+    for (int i = 0; i < num_pipes; i++) {
+        if (pipe(pipes[i]) == -1) {
+            perror("pipe");
+            return ERR_EXEC_CMD;
+        }
+    }
+
+    for (int i = 0; i < num_commands; i++) {
+        pids[i] = fork();
+        if (pids[i] == -1) {
+            return ERR_EXEC_CMD;
+        }
+
+        if (pids[i] == 0) {
+            if (i > 0) {
+                dup2(pipes[i-1][0], STDIN_FILENO);
+            }
+            if (i < num_commands - 1) {
+                dup2(pipes[i][1], STDOUT_FILENO);
+            }
+
+            for (int j = 0; j < num_pipes; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+
+            execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            exit(1);
+        }
+    }
+
+    for (int j = 0; j < num_pipes; j++) {
+        close(pipes[j][0]);
+        close(pipes[j][1]);
+    }
+
+    for (int i = 0; i < num_commands; i++) {
+        waitpid(pids[i], NULL, 0);
+    }
+
+    return 0;
+
+}
+
+int exec_cmd(cmd_buff_t *cmd) {
     pid_t pid = fork();
     int status;
 
@@ -131,14 +187,37 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
     return OK;
 }
 
+int count_num_of_pipes(char *cmd_buff) {
+    char *copy_cmd_buff = cmd_buff;
+    int pipe_counter = 1;
+    while (*copy_cmd_buff != '\0') {
+        if (*copy_cmd_buff == PIPE_CHAR) {
+            pipe_counter += 1;
+        }
+        copy_cmd_buff++;
+    }
+
+    return pipe_counter;
+}
+
+int handle_command_errors(int rc) {
+    switch (rc) {
+        case ERR_MEMORY:
+            return rc;
+        case WARN_NO_CMDS:
+            return rc;
+        case ERR_TOO_MANY_COMMANDS:
+            return rc;
+        default:
+            return OK;
+    }
+}
 
 
-int exec_local_cmd_loop()
-{
-    char *cmd_buff;
+int exec_local_cmd_loop() {
+    char *cmd_buff = (char*)malloc(ARG_MAX);
     int rc = 0;
     cmd_buff_t *cmd = (cmd_buff_t*)malloc(sizeof(cmd_buff_t));
-    cmd_buff = (char*)malloc(ARG_MAX);
 
     while(1){
         printf("%s", SH_PROMPT);
@@ -147,33 +226,51 @@ int exec_local_cmd_loop()
             break;
         }
         cmd_buff[strcspn(cmd_buff,"\n")] = '\0';
+        
         if (cmd_buff[0] == '\0') {
             continue;
         }
         
-        rc = build_cmd_buff(cmd_buff, cmd);
-        switch (rc) {
-            case ERR_MEMORY:
-                return rc;
-            case WARN_NO_CMDS:
-                printf(CMD_WARN_NO_CMD);
-                continue;
-            case ERR_TOO_MANY_COMMANDS:
-                continue;
-        }
+        int pipe_counter = count_num_of_pipes(cmd_buff);
 
-        if (strcmp(cmd->argv[0], "cd") == 0) {
-            if (cmd->argc == 1) {
+        if (pipe_counter == 1) {
+            rc = build_cmd_buff(cmd_buff, cmd);
+            if (handle_command_errors(rc)) {
                 continue;
             }
+            if (strcmp(cmd->argv[0], "cd") == 0) {
+                if (cmd->argc == 1) {
+                    continue;
+                }
+            }
+            if (strcmp(cmd->argv[0], EXIT_CMD) == 0) {
+                return OK_EXIT;
+            }
+            exec_cmd(cmd);
+
+        } else {
+            command_list_t *cmd_list = malloc(sizeof(command_list_t));
+            cmd_list->num = 0;
+
+            char *command_segment = strtok(cmd_buff, "|");
+            while (command_segment != NULL) {
+                cmd_buff_t *pipe_cmd_buff = malloc(sizeof(cmd_buff_t));
+                rc = build_cmd_buff(command_segment, pipe_cmd_buff);
+                if (handle_command_errors(rc)) {
+                    continue;
+                }
+
+                cmd_list->commands[cmd_list->num] = *pipe_cmd_buff;
+                cmd_list->num++;
+
+                command_segment = strtok(NULL, "|");
+            }
+
+            execute_pipeline(cmd_list);
+
         }
 
-        
-        if (strcmp(cmd->argv[0], EXIT_CMD) == 0) {
-            return OK_EXIT;
-        }
-
-        exec_cmd(cmd);  
+ 
     }
 
     free_cmd_buff(cmd);
