@@ -418,11 +418,10 @@ int send_message_string(int cli_socket, char *buff){
 int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     int pipes[clist->num - 1][2];  // Array of pipes
     pid_t pids[clist->num];
-    int  pids_st[clist->num];         // Array to store process IDs
+    int  pids_st[clist->num];
     Built_In_Cmds bi_cmd;
     int exit_code;
 
-    // Create all necessary pipes
     for (int i = 0; i < clist->num - 1; i++) {
         if (pipe(pipes[i]) == -1) {
             perror("pipe");
@@ -464,19 +463,16 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     }
 
 
-    // Parent process: close all pipe ends
     for (int i = 0; i < clist->num - 1; i++) {
         close(pipes[i][0]);
         close(pipes[i][1]);
     }
 
-    // Wait for all children
     for (int i = 0; i < clist->num; i++) {
         waitpid(pids[i], &pids_st[i], 0);
     }
 
-    //by default get exit code of last process
-    //use this as the return value
+
     exit_code = WEXITSTATUS(pids_st[clist->num - 1]);
     for (int i = 0; i < clist->num; i++) {
         //if any commands in the pipeline are EXIT_SC

@@ -1,6 +1,6 @@
 1. How does the remote client determine when a command's output is fully received from the server, and what techniques can be used to handle partial reads or ensure complete message transmission?
 
-_The remote client determines when a command's output is full received from the server by the EOF signal, exit, stop-server command, and by timeouts if the server closes the connection. A technique that can be used to handle partial reads to ensure complete message transmission by looping/continously reading until the expected data is recieved._
+_The remote client determines when a command's output is full received from the server by the EOF or EOT signal, exit, stop-server command, and by timeouts if the server closes the connection. A technique that can be used to handle partial reads to ensure complete message transmission by looping/continously reading until the expected data is recieved._
 
 2. This week's lecture on TCP explains that it is a reliable stream protocol rather than a message-oriented one. Since TCP does not preserve message boundaries, how should a networked shell protocol define and detect the beginning and end of a command sent over a TCP connection? What challenges arise if this is not handled correctly?
 
