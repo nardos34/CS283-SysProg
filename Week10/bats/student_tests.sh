@@ -50,6 +50,28 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test 'Simple command execution: pwd' {
+    ip=$(hostname -I | tr -d '[:space:]')
+    run "./dsh" -c -i $ip -p 7890 <<EOF
+pwd
+exit
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="socketclientmode:addr:$ip:7890dsh4>$(pwd | tr -d '[:space:]')dsh4>Serverclosedconnectioncmdloopreturned-50"
+
+
+    echo "Stripped Output: ${stripped_output}" | od -c
+    echo "Expected Output: ${expected_output}" | od -c
+
+    expected=$(echo "$expected_output" | tr -d '[:cntrl:]')
+    stripped=$(echo "$stripped_output" | tr -d '[:cntrl:]')
+
+    [ "$stripped" = "$expected" ]
+
+    [ "$status" -eq 0 ]
+}
+
 @test "Simple command execution: ls" {
     ip=$(hostname -I | tr -d '[:space:]')
     run "./dsh" -c -i $ip -p 7890 <<EOF
