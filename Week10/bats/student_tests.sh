@@ -283,10 +283,8 @@ EOF
     run "./dsh" -c -i $ip -p 7890 <<EOF
 stop-server
 EOF
-
     stripped_output=$(echo "$output" | tr -d '[:space:]')
     expected_output="socketclientmode:addr:$ip:7890dsh4>Serverclosedconnectioncmdloopreturned-50"
-
 
     echo "Stripped Output: ${stripped_output}" | od -c
     echo "Expected Output: ${expected_output}" | od -c
